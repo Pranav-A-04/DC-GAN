@@ -20,7 +20,6 @@ with open("config.yml", "r") as f:
 
 latent_dim = config["latent_dim"]
 
-dataset_config = config['dataset_params']
 training_config = config['train_params']
 
 save_sample_steps = training_config['save_sample_steps']
@@ -47,6 +46,7 @@ def train(generator, discriminator, loss_fn, optimizer_disc, optimizer_gen, data
     generator.train()
     discriminator.train()
     generated_sample_count = 0
+    steps = 0
     for epoch in range(epochs):
         generator_losses=[]
         discriminator_losses = []
@@ -105,7 +105,7 @@ def main():
         conv_channels=[1024, 512, 256, 128],
         kernels=[4, 4, 4, 4, 4],
         strides=[2, 2, 2, 2, 2],
-        paddings=[0, 1, 1, 1, 1],
+        paddings=[1, 1, 1, 1, 1],
         output_paddings=[0, 0, 0, 0, 0]
     ).to(device)
     
