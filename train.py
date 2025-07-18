@@ -50,7 +50,7 @@ def train(generator, discriminator, loss_fn, optimizer_disc, optimizer_gen, data
     for epoch in range(epochs):
         generator_losses=[]
         discriminator_losses = []
-        for im in tqdm(dataloader, desc=f"Epoch {epoch+1}/{epochs}"):
+        for im, _ in tqdm(dataloader, desc=f"Epoch {epoch+1}/{epochs}"):
             real_imgs = im.float().to(device)
             batch_size = real_imgs.shape[0]
             
