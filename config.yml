@@ -1,0 +1,17 @@
+latent_dim: 100
+
+dataset_params:
+  im_path: 'cifar10'
+  im_ext : 'jpg'
+  im_channels : 3
+  im_size : 32
+  name : 'cifar10'
+
+train_params:
+  batch_size: 64
+  num_epochs: 5
+  num_samples : 100
+  num_grid_rows : 10
+  save_sample_steps : 200
+  lr: 0.0005
+  ckpt_name: 'cifar10_ckpt.pth'

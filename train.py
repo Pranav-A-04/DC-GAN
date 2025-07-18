@@ -1,0 +1,145 @@
+import numpy as np
+import torch as th
+import torchvision
+from torchvision.utils import make_grid
+import os
+import yaml
+from torch.utils.data import DataLoader
+from torchvision.datasets import CIFAR10
+from tqdm import tqdm
+
+import yaml
+
+from models.generator import Generator
+from models.discriminator import Discriminator
+from data.dataloader import CIFAR10Dataset
+
+with open("config.yml", "r") as f:
+    config = yaml.safe_load(f)
+
+
+latent_dim = config["latent_dim"]
+
+dataset_config = config['dataset_params']
+training_config = config['train_params']
+
+save_sample_steps = training_config['save_sample_steps']
+batch_size = training_config['batch_size']
+num_grid_rows = training_config['num_grid_rows']
+learning_rate = training_config['lr']
+num_samples = training_config['num_samples']
+num_epochs = training_config['epochs']
+
+im_path = dataset_config['im_path']
+im_ext = dataset_config['im_ext']
+im_size = dataset_config['im_size']
+
+device = th.device("cuda" if th.cuda.is_available() else "cpu")
+
+def sample(generated_sample_count, generator, device):
+    with th.no_grad():
+        fake_im_noise = th.randn((num_samples, latent_dim), device=device)
+        fake_ims = generator(fake_im_noise)
+        fake_ims = (fake_ims + 1) / 2
+        grid = make_grid(fake_ims, nrow=num_grid_rows)
+        img = torchvision.transforms.ToPILImage()(grid)
+        if not os.path.exists('samples'):
+            os.mkdir('samples')
+        img.save(os.path.join('samples', '{}.png'.format(generated_sample_count)))
+
+def train(generator, discriminator, loss_fn, optimizer_disc, optimizer_gen, dataloader, device, epochs=100):
+    generator.train()
+    discriminator.train()
+    generated_sample_count = 0
+    for epoch in range(epochs):
+        generator_losses=[]
+        discriminator_losses = []
+        for im in tqdm(dataloader, desc=f"Epoch {epoch+1}/{epochs}"):
+            real_imgs = im.float().to(device)
+            batch_size = real_imgs.shape[0]
+            
+            #optimize discriminator
+            optimizer_disc.zero_grad()
+            z = th.randn(batch_size, latent_dim).to(device)
+            fake_imgs = generator(z)
+            real_labels = th.ones(batch_size, 1).to(device)
+            fake_labels = th.zeros(batch_size, 1).to(device)
+            
+            real_preds = discriminator(real_imgs)
+            fake_preds = discriminator(fake_imgs.detach())
+            
+            disc_real_loss = loss_fn(real_preds.reshape(-1), real_labels.reshape(-1))
+            disc_fake_loss = loss_fn(fake_preds.reshape(-1), fake_labels.reshape(-1))
+            disc_loss = (disc_real_loss + disc_fake_loss) / 2
+            disc_loss.backward()
+            optimizer_disc.step()
+            
+            #optimize generator
+            optimizer_gen.zero_grad()
+            fake_preds = discriminator(fake_imgs)
+            gen_loss = loss_fn(fake_preds.reshape(-1), real_labels.reshape(-1))
+            gen_loss.backward()
+            optimizer_gen.step()
+            
+            discriminator_losses.append(disc_loss.item())
+            generator_losses.append(gen_loss.item())
+            
+            # Save samples
+            if steps % save_sample_steps == 0:
+                generator.eval()
+                sample(generated_sample_count, generator, device)
+                generated_sample_count += 1
+                generator.train()
+
+            steps += 1
+            print('Finished epoch:{} | Generator Loss : {:.4f} | Discriminator Loss : {:.4f}'.format(
+                epoch + 1,
+                np.mean(generator_losses),
+                np.mean(discriminator_losses),
+            ))
+            
+            
+        
+
+def main():
+    generator = Generator(
+        latent_dim=latent_dim,
+        im_size=im_size or 32,
+        im_channels=3,
+        conv_channels=[1024, 512, 256, 128],
+        kernels=[4, 4, 4, 4, 4],
+        strides=[2, 2, 2, 2, 2],
+        paddings=[0, 1, 1, 1, 1],
+        output_paddings=[0, 0, 0, 0, 0]
+    ).to(device)
+    
+    discriminator = Discriminator(
+        im_size=im_size or 32,
+        im_channels=3,  
+        conv_channels=[128, 256, 512, 1024],
+        kernels=[4, 4, 4, 4, 4],
+        strides=[2, 2, 2, 2, 2],
+        paddings=[1, 1, 1, 1, 1]
+    ).to(device)
+    
+    dataloader = DataLoader(
+        CIFAR10Dataset(
+            split='train',
+            im_path=im_path,
+            im_size=im_size or 32,
+            im_channels=3,
+            im_ext=im_ext
+        ),
+        batch_size=batch_size,
+        shuffle=True,
+        pin_memory=True
+    )
+    
+    loss_fn = th.nn.BCEWithLogitsLoss()
+    optimizer_disc = th.optim.Adam(discriminator.parameters(), lr=learning_rate, betas=(0.5, 0.999))
+    optimizer_gen = th.optim.Adam(generator.parameters(), lr=learning_rate, betas=(0.5, 0.999))
+    
+    train(generator, discriminator, loss_fn, optimizer_disc, optimizer_gen, dataloader, device, epochs=num_epochs)
+
+if __name__ == "__main__":
+    main()
