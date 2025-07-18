@@ -50,6 +50,8 @@ def train(generator, discriminator, loss_fn, optimizer_disc, optimizer_gen, data
     for epoch in range(epochs):
         generator_losses=[]
         discriminator_losses = []
+        mean_real_dis_preds = []
+        mean_fake_dis_preds = []
         for im, _ in tqdm(dataloader, desc=f"Epoch {epoch+1}/{epochs}"):
             real_imgs = im.float().to(device)
             batch_size = real_imgs.shape[0]
@@ -66,6 +68,8 @@ def train(generator, discriminator, loss_fn, optimizer_disc, optimizer_gen, data
             
             disc_real_loss = loss_fn(real_preds.reshape(-1), real_labels.reshape(-1))
             disc_fake_loss = loss_fn(fake_preds.reshape(-1), fake_labels.reshape(-1))
+            mean_real_dis_preds.append(th.nn.Sigmoid()(real_preds).mean().item())
+            mean_fake_dis_preds.append(th.nn.Sigmoid()(fake_preds).mean().item())
             disc_loss = (disc_real_loss + disc_fake_loss) / 2
             disc_loss.backward()
             optimizer_disc.step()
@@ -88,14 +92,16 @@ def train(generator, discriminator, loss_fn, optimizer_disc, optimizer_gen, data
                 generator.train()
 
             steps += 1
-            print('Finished epoch:{} | Generator Loss : {:.4f} | Discriminator Loss : {:.4f}'.format(
+            print('Finished epoch:{} | Generator Loss : {:.4f} | Discriminator Loss : {:.4f}| '
+              'Discriminator real pred : {:.4f} | Discriminator fake pred : {:.4f}'.format(
                 epoch + 1,
                 np.mean(generator_losses),
                 np.mean(discriminator_losses),
-            ))
+                np.mean(mean_real_dis_preds),
+                np.mean(mean_fake_dis_preds),
+                )
+            )
             
-            
-        
 
 def main():
     generator = Generator(
