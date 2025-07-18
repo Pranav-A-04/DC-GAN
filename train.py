@@ -1,6 +1,7 @@
 import numpy as np
 import torch as th
 import torchvision
+from torchvision import transforms
 from torchvision.utils import make_grid
 import os
 import yaml
@@ -12,7 +13,6 @@ import yaml
 
 from models.generator import Generator
 from models.discriminator import Discriminator
-from data.dataloader import CIFAR10Dataset
 
 with open("config.yml", "r") as f:
     config = yaml.safe_load(f)
@@ -28,11 +28,7 @@ batch_size = training_config['batch_size']
 num_grid_rows = training_config['num_grid_rows']
 learning_rate = training_config['lr']
 num_samples = training_config['num_samples']
-num_epochs = training_config['epochs']
-
-im_path = dataset_config['im_path']
-im_ext = dataset_config['im_ext']
-im_size = dataset_config['im_size']
+num_epochs = training_config['num_epochs']
 
 device = th.device("cuda" if th.cuda.is_available() else "cpu")
 
@@ -104,7 +100,7 @@ def train(generator, discriminator, loss_fn, optimizer_disc, optimizer_gen, data
 def main():
     generator = Generator(
         latent_dim=latent_dim,
-        im_size=im_size or 32,
+        im_size=32,
         im_channels=3,
         conv_channels=[1024, 512, 256, 128],
         kernels=[4, 4, 4, 4, 4],
@@ -114,26 +110,19 @@ def main():
     ).to(device)
     
     discriminator = Discriminator(
-        im_size=im_size or 32,
+        im_size=32,
         im_channels=3,  
         conv_channels=[128, 256, 512, 1024],
         kernels=[4, 4, 4, 4, 4],
         strides=[2, 2, 2, 2, 2],
         paddings=[1, 1, 1, 1, 1]
     ).to(device)
-    
-    dataloader = DataLoader(
-        CIFAR10Dataset(
-            split='train',
-            im_path=im_path,
-            im_size=im_size or 32,
-            im_channels=3,
-            im_ext=im_ext
-        ),
-        batch_size=batch_size,
-        shuffle=True,
-        pin_memory=True
-    )
+    transform = transforms.Compose([
+                    transforms.ToTensor(),
+                    transforms.Lambda(lambda x: (2 * x) - 1)  # scale to [-1, 1]
+                ])
+    dataset = CIFAR10(root='data', train=True, download=True, transform=transform)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, pin_memory=True)
     
     loss_fn = th.nn.BCEWithLogitsLoss()
     optimizer_disc = th.optim.Adam(discriminator.parameters(), lr=learning_rate, betas=(0.5, 0.999))

@@ -1,12 +1,5 @@
 latent_dim: 100
 
-dataset_params:
-  im_path: 'cifar10'
-  im_ext : 'jpg'
-  im_channels : 3
-  im_size : 32
-  name : 'cifar10'
-
 train_params:
   batch_size: 64
   num_epochs: 5
