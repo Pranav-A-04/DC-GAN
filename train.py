@@ -120,7 +120,7 @@ def main():
         im_channels=3,
         conv_channels=[1024, 512, 256, 128],
         kernels=[4, 4, 4, 4, 4],
-        strides=[1, 2, 2, 2, 2],
+        strides=[1, 2, 2, 2, 1],
         paddings=[0, 1, 1, 1, 1],
         output_paddings=[0, 0, 0, 0, 0]
     ).to(device)
