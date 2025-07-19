@@ -141,7 +141,7 @@ def main():
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, pin_memory=True)
     
     loss_fn = th.nn.BCEWithLogitsLoss()
-    optimizer_disc = th.optim.Adam(discriminator.parameters(), lr=learning_rate*0.5, betas=(0.5, 0.999))
+    optimizer_disc = th.optim.Adam(discriminator.parameters(), lr=learning_rate, betas=(0.5, 0.999))
     optimizer_gen = th.optim.Adam(generator.parameters(), lr=learning_rate, betas=(0.5, 0.999))
     
     train(generator, discriminator, loss_fn, optimizer_disc, optimizer_gen, dataloader, device, epochs=num_epochs)
