@@ -119,7 +119,7 @@ def main():
         im_size=32,
         im_channels=3,
         conv_channels=[1024, 512, 256, 128],
-        kernels=[4, 4, 4, 4, 4],
+        kernels=[4, 4, 4, 4, 3],
         strides=[1, 2, 2, 2, 1],
         paddings=[0, 1, 1, 1, 1],
         output_paddings=[0, 0, 0, 0, 0]
