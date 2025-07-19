@@ -60,7 +60,7 @@ def train(generator, discriminator, loss_fn, optimizer_disc, optimizer_gen, data
             fake_imgs = generator(z)
             
             #instance noise for the first 10 epochs
-            noise = max(0.05 * (1 - epoch / (epochs - 10)), 0.0)
+            noise = max(0.05 * (1 - epoch / (epochs - 10)), 0.01)
             real_imgs = real_imgs + noise * th.randn_like(real_imgs)
             fake_imgs = fake_imgs + noise * th.randn_like(fake_imgs)
             
