@@ -22,7 +22,6 @@ latent_dim = config["latent_dim"]
 
 training_config = config['train_params']
 
-save_sample_steps = training_config['save_sample_steps']
 batch_size = training_config['batch_size']
 num_grid_rows = training_config['num_grid_rows']
 learning_rate = training_config['lr']
@@ -31,7 +30,7 @@ num_epochs = training_config['num_epochs']
 
 device = th.device("cuda" if th.cuda.is_available() else "cpu")
 
-def sample(generated_sample_count, generator, device):
+def sample(epoch, generator, device):
     with th.no_grad():
         fake_im_noise = th.randn((num_samples, latent_dim), device=device)
         fake_ims = generator(fake_im_noise)
@@ -40,13 +39,12 @@ def sample(generated_sample_count, generator, device):
         img = torchvision.transforms.ToPILImage()(grid)
         if not os.path.exists('samples'):
             os.mkdir('samples')
-        img.save(os.path.join('samples', '{}.png'.format(generated_sample_count)))
+        img.save(os.path.join('samples', '{}.png'.format(epoch)))
 
 def train(generator, discriminator, loss_fn, optimizer_disc, optimizer_gen, dataloader, device, epochs=100):
     generator.train()
     discriminator.train()
-    generated_sample_count = 0
-    steps = 0
+
     for epoch in range(epochs):
         generator_losses=[]
         discriminator_losses = []
@@ -84,15 +82,14 @@ def train(generator, discriminator, loss_fn, optimizer_disc, optimizer_gen, data
             discriminator_losses.append(disc_loss.item())
             generator_losses.append(gen_loss.item())
             
-            # Save samples
-            if steps % save_sample_steps == 0:
-                generator.eval()
-                sample(generated_sample_count, generator, device)
-                generated_sample_count += 1
-                generator.train()
-
-            steps += 1
-            print('Finished epoch:{} | Generator Loss : {:.4f} | Discriminator Loss : {:.4f}| '
+        # Save samples
+        if epoch % 5 == 0:
+            generator.eval()
+            sample(epoch, generator, device)
+            generated_sample_count += 1
+            generator.train()
+        
+        print('Finished epoch:{} | Generator Loss : {:.4f} | Discriminator Loss : {:.4f}| '
               'Discriminator real pred : {:.4f} | Discriminator fake pred : {:.4f}'.format(
                 epoch + 1,
                 np.mean(generator_losses),
@@ -101,7 +98,6 @@ def train(generator, discriminator, loss_fn, optimizer_disc, optimizer_gen, data
                 np.mean(mean_fake_dis_preds),
                 )
             )
-            
 
 def main():
     generator = Generator(
