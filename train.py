@@ -136,7 +136,7 @@ def main():
     dataset = CIFAR10(root='data', train=True, download=True, transform=transform)
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, pin_memory=True)
     
-    loss_fn = th.nn.BCELoss()
+    loss_fn = th.nn.BCEWithLogitsLoss()
     optimizer_disc = th.optim.Adam(discriminator.parameters(), lr=learning_rate, betas=(0.5, 0.999))
     optimizer_gen = th.optim.Adam(generator.parameters(), lr=learning_rate, betas=(0.5, 0.999))
     
