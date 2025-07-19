@@ -28,6 +28,8 @@ class Discriminator(nn.Module):
         out = x
         for layer in self.layers:
             out = layer(out)
-        return out.view(out.size(0), -1).squeeze(1)
+        out = out.view(out.size(0), -1)
+        out = nn.Sigmoid()(out)
+        return out.squeeze(1)
 
 
