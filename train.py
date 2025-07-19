@@ -30,6 +30,15 @@ num_epochs = training_config['num_epochs']
 
 device = th.device("cuda" if th.cuda.is_available() else "cpu")
 
+def get_noise(epoch, total_epochs=100, noise_max=0.05):
+    if epoch < 10:
+        return noise_max  # Early protection
+    elif epoch > total_epochs - 10:
+        return 0.0  # Final clarity
+    else:
+        progress = (epoch - 10) / (total_epochs - 20)
+        return noise_max * (1 - progress)
+
 def sample(epoch, generator, device):
     with th.no_grad():
         fake_im_noise = th.randn((num_samples, latent_dim), device=device)
@@ -60,7 +69,7 @@ def train(generator, discriminator, loss_fn, optimizer_disc, optimizer_gen, data
             fake_imgs = generator(z)
             
             #annealed noise
-            noise = max(0.05 * (1 - epoch/50), 0)
+            noise = get_noise(epoch)
             real_imgs = real_imgs + noise * th.randn_like(real_imgs)
             fake_imgs = fake_imgs + noise * th.randn_like(fake_imgs)
             # label smoothing
@@ -109,11 +118,11 @@ def main():
         latent_dim=latent_dim,
         im_size=32,
         im_channels=3,
-        conv_channels=[512, 256, 128],
-        kernels=[4, 4, 4, 4],
-        strides=[2, 2, 2, 2],
-        paddings=[0, 1, 1, 1],
-        output_paddings=[0, 0, 0, 0]
+        conv_channels=[1024, 512, 256, 128],
+        kernels=[4, 4, 4, 4, 4],
+        strides=[1, 2, 2, 2, 2],
+        paddings=[0, 1, 1, 1, 1],
+        output_paddings=[0, 0, 0, 0, 0]
     ).to(device)
     
     discriminator = Discriminator(
