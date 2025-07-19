@@ -86,7 +86,6 @@ def train(generator, discriminator, loss_fn, optimizer_disc, optimizer_gen, data
         if epoch % 5 == 0:
             generator.eval()
             sample(epoch, generator, device)
-            generated_sample_count += 1
             generator.train()
         
         print('Finished epoch:{} | Generator Loss : {:.4f} | Discriminator Loss : {:.4f}| '
