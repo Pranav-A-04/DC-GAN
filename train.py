@@ -58,9 +58,12 @@ def train(generator, discriminator, loss_fn, optimizer_disc, optimizer_gen, data
             optimizer_disc.zero_grad()
             z = th.randn(batch_size, latent_dim).to(device)
             fake_imgs = generator(z)
-            real_labels = th.ones(batch_size, 1).to(device)
-            fake_labels = th.zeros(batch_size, 1).to(device)
-            
+            real_imgs += 0.05 * th.randn_like(real_imgs)
+            fake_imgs += 0.05 * th.randn_like(fake_imgs)
+            # label smoothing
+            real_labels = th.full((batch_size,), 0.9, device=device)
+            fake_labels = th.full((batch_size,), 0.1, device=device)
+        
             real_preds = discriminator(real_imgs)
             fake_preds = discriminator(fake_imgs.detach())
             
@@ -103,20 +106,20 @@ def main():
         latent_dim=latent_dim,
         im_size=32,
         im_channels=3,
-        conv_channels=[1024, 512, 256, 128],
-        kernels=[4, 4, 4, 4, 4],
-        strides=[2, 2, 2, 2, 2],
-        paddings=[1, 1, 1, 1, 1],
-        output_paddings=[0, 0, 0, 0, 0]
+        conv_channels=[512, 256, 128],
+        kernels=[4, 4, 4, 4],
+        strides=[2, 2, 2, 2],
+        paddings=[0, 1, 1, 1],
+        output_paddings=[0, 0, 0, 0]
     ).to(device)
     
     discriminator = Discriminator(
         im_size=32,
         im_channels=3,  
-        conv_channels=[128, 256, 512, 1024],
-        kernels=[4, 4, 4, 4, 4],
-        strides=[2, 2, 2, 2, 2],
-        paddings=[1, 1, 1, 1, 1]
+        conv_channels=[128, 256, 512],
+        kernels=[4, 4, 4, 4],
+        strides=[2, 2, 2, 2],
+        paddings=[1, 1, 1, 0]
     ).to(device)
     transform = transforms.Compose([
                     transforms.ToTensor(),

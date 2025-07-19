@@ -26,6 +26,6 @@ class Discriminator(nn.Module):
         out = x
         for layer in self.layers:
             out = layer(out)
-        return out.reshape(x.size(0))
+        return out.view(out.size(0), -1).squeeze(1)
 
 
