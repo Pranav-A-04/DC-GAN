@@ -58,8 +58,8 @@ def train(generator, discriminator, loss_fn, optimizer_disc, optimizer_gen, data
             optimizer_disc.zero_grad()
             z = th.randn(batch_size, latent_dim).to(device)
             fake_imgs = generator(z)
-            real_imgs += 0.05 * th.randn_like(real_imgs)
-            fake_imgs += 0.05 * th.randn_like(fake_imgs)
+            real_imgs = real_imgs + 0.05 * th.randn_like(real_imgs)
+            fake_imgs = fake_imgs + 0.05 * th.randn_like(fake_imgs)
             # label smoothing
             real_labels = th.full((batch_size,), 0.9, device=device)
             fake_labels = th.full((batch_size,), 0.1, device=device)
