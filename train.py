@@ -124,10 +124,10 @@ def main():
     discriminator = Discriminator(
         im_size=32,
         im_channels=3,  
-        conv_channels=[128, 256, 512],
-        kernels=[4, 4, 4, 4],
-        strides=[2, 2, 2, 2],
-        paddings=[1, 1, 1, 0]
+        conv_channels=[128, 256, 512, 1024],
+        kernels=[3, 4, 4, 4, 4],
+        strides=[1, 2, 2, 2, 2],
+        paddings=[1, 1, 1, 1, 0]
     ).to(device)
     transform = transforms.Compose([
                     transforms.ToTensor(),
