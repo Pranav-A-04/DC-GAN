@@ -142,6 +142,13 @@ def main():
         strides=[1, 2, 2, 2, 2],
         paddings=[1, 1, 1, 1, 0]
     ).to(device)
+    
+    # Use DataParallel if multiple GPUs are available
+    if th.cuda.device_count() > 1:
+        print(f"Using {th.cuda.device_count()} GPUs for training.")
+        generator = th.nn.DataParallel(generator)
+        discriminator = th.nn.DataParallel(discriminator)
+        
     transform = transforms.Compose([
                     transforms.ToTensor(),
                     transforms.Lambda(lambda x: (2 * x) - 1)  # scale to [-1, 1]
