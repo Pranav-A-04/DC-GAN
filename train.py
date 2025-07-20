@@ -8,6 +8,10 @@ import yaml
 from torch.utils.data import DataLoader
 from torchvision.datasets import CIFAR10
 from tqdm import tqdm
+import torch
+import torchvision.models as models
+import torch.nn.functional as F
+from scipy.linalg import sqrtm
 
 import yaml
 
@@ -50,6 +54,7 @@ def train(generator, discriminator, loss_fn, optimizer_disc, optimizer_gen, data
         discriminator_losses = []
         mean_real_dis_preds = []
         mean_fake_dis_preds = []
+        fid_score = None
         for im, _ in tqdm(dataloader, desc=f"Epoch {epoch+1}/{epochs}"):
             real_imgs = im.float().to(device)
             batch_size = real_imgs.shape[0]
@@ -93,21 +98,49 @@ def train(generator, discriminator, loss_fn, optimizer_disc, optimizer_gen, data
             discriminator_losses.append(disc_loss.item())
             generator_losses.append(gen_loss.item())
             
+            # After generator update, collect a batch for FID
+            if fid_score is None:
+                with torch.no_grad():
+                    z_fid = th.randn(batch_size, latent_dim).to(device)
+                    fake_imgs_fid = generator(z_fid)
+                    fid_score = calculate_fid(real_imgs, fake_imgs_fid, device)
         # Save samples
         if epoch % 5 == 0:
             generator.eval()
             sample(epoch, generator, device)
             generator.train()
-        
         print('Finished epoch:{} | Generator Loss : {:.4f} | Discriminator Loss : {:.4f}| '
-              'Discriminator real pred : {:.4f} | Discriminator fake pred : {:.4f}'.format(
+              'Discriminator real pred : {:.4f} | Discriminator fake pred : {:.4f} | FID : {:.4f}'.format(
                 epoch + 1,
                 np.mean(generator_losses),
                 np.mean(discriminator_losses),
                 np.mean(mean_real_dis_preds),
                 np.mean(mean_fake_dis_preds),
+                fid_score if fid_score is not None else -1,
                 )
             )
+
+def get_inception_features(images, device):
+    # Resize to 299x299 and normalize as Inception expects
+    images = F.interpolate(images, size=(299, 299), mode='bilinear', align_corners=False)
+    images = (images + 1) / 2  # scale to [0, 1]
+    inception = models.inception_v3(pretrained=True, transform_input=False).to(device)
+    inception.eval()
+    with torch.no_grad():
+        features = inception(images).detach().cpu().numpy()
+    return features
+
+def calculate_fid(real_images, fake_images, device):
+    real_features = get_inception_features(real_images, device)
+    fake_features = get_inception_features(fake_images, device)
+    mu1, sigma1 = real_features.mean(axis=0), np.cov(real_features, rowvar=False)
+    mu2, sigma2 = fake_features.mean(axis=0), np.cov(fake_features, rowvar=False)
+    ssdiff = np.sum((mu1 - mu2) ** 2)
+    covmean = sqrtm(sigma1.dot(sigma2))
+    if np.iscomplexobj(covmean):
+        covmean = covmean.real
+    fid = ssdiff + np.trace(sigma1 + sigma2 - 2 * covmean)
+    return fid
 
 def main():
     generator = Generator(
