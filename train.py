@@ -59,14 +59,14 @@ def train(generator, discriminator, loss_fn, optimizer_disc, optimizer_gen, data
             z = th.randn(batch_size, latent_dim).to(device)
             fake_imgs = generator(z)
             
-            #instance noise for the first 10 epochs
-            noise = max(0.05 * (1 - epoch / (epochs - 10)), 0.01)
-            real_imgs = real_imgs + noise * th.randn_like(real_imgs)
-            fake_imgs = fake_imgs + noise * th.randn_like(fake_imgs)
+            # #instance noise for the first 10 epochs
+            # noise = max(0.05 * (1 - epoch / (epochs - 10)), 0.01)
+            # real_imgs = real_imgs + noise * th.randn_like(real_imgs)
+            # fake_imgs = fake_imgs + noise * th.randn_like(fake_imgs)
             
-            #clamping noisy images back to [-1, 1]
-            real_imgs = real_imgs.clamp(-1, 1)
-            fake_imgs = fake_imgs.clamp(-1, 1)
+            # #clamping noisy images back to [-1, 1]
+            # real_imgs = real_imgs.clamp(-1, 1)
+            # fake_imgs = fake_imgs.clamp(-1, 1)
             
             # label smoothing
             real_labels = th.full((batch_size,), 0.9, device=device)
