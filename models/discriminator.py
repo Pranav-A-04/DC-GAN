@@ -18,7 +18,7 @@ class Discriminator(nn.Module):
                           bias=False if i != 0 else True),
                 nn.BatchNorm2d(layers_dim[i + 1]) if i != len(layers_dim) - 2 and i != 0 else nn.Identity(),
                 activation if i != len(layers_dim) - 2 else nn.Identity(),
-                nn.Dropout2d(0.2) if i != len(layers_dim) - 2 else nn.Identity()
+                nn.Dropout2d(0.3) if i != len(layers_dim) - 2 else nn.Identity()
             )
             for i in range(len(layers_dim) - 1)
         ])
