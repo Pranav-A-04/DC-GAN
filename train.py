@@ -11,7 +11,7 @@ from tqdm import tqdm
 import csv
 
 import yaml
-from torchmetrics.image.fid import FrechetInceptionDistance
+
 from models.generator import Generator
 from models.discriminator import Discriminator
 
@@ -31,31 +31,6 @@ num_epochs = training_config['num_epochs']
 
 device = th.device("cuda" if th.cuda.is_available() else "cpu")
 
-def calculate_fid(generator, dataloader, device, latent_dim, num_samples=1000):
-    fid = FrechetInceptionDistance(feature=2048).to(device)
-    generator.eval()
-    real_images = []
-    fake_images = []
-    with th.no_grad():
-        for i, (real, _) in enumerate(dataloader):
-            if len(real_images) * real.shape[0] >= num_samples:
-                break
-            # Rescale real images if needed
-            real = (real + 1) / 2  # if originally in [-1, 1]
-            real_images.append(real.to(device))
-
-            z = th.randn(real.shape[0], latent_dim, device=device)
-            fake = generator(z)
-            fake = (fake + 1) / 2  # scale to [0, 1]
-            fake_images.append(fake)
-
-    real_images = th.cat(real_images, dim=0)[:num_samples]
-    fake_images = th.cat(fake_images, dim=0)[:num_samples]
-
-    fid.update(real_images, real=True)
-    fid.update(fake_images, real=False)
-
-    return fid.compute().item()
 def sample(epoch, generator, device):
     with th.no_grad():
         fake_im_noise = th.randn((num_samples, latent_dim), device=device)
@@ -77,85 +52,73 @@ def train(generator, discriminator, loss_fn, optimizer_disc, optimizer_gen, data
         writer = csv.writer(f)
         if write_header:
             writer.writerow(['epoch', 'generator_loss', 'discriminator_loss'])
-        # Prepare CSV file for logging FID scores
-        fid_csv = 'fid_log.csv'
-        write_fid_header = not os.path.exists(fid_csv)
-        with open(fid_csv, mode='a', newline='') as fid_f:
-            fid_writer = csv.writer(fid_f)
-            if write_fid_header:
-                fid_writer.writerow(['epoch', 'FID'])
-            for epoch in range(epochs):
-                generator_losses=[]
-                discriminator_losses = []
-                mean_real_dis_preds = []
-                mean_fake_dis_preds = []
-                for im, _ in tqdm(dataloader, desc=f"Epoch {epoch+1}/{epochs}"):
-                    real_imgs = im.float().to(device)
-                    batch_size = real_imgs.shape[0]
-                    
-                    #optimize discriminator
-                    optimizer_disc.zero_grad()
-                    z = th.randn(batch_size, latent_dim).to(device)
-                    fake_imgs = generator(z)
-                    
-                    # #instance noise for the first 10 epochs
-                    # noise = max(0.05 * (1 - epoch / (epochs - 10)), 0.01)
-                    # real_imgs = real_imgs + noise * th.randn_like(real_imgs)
-                    # fake_imgs = fake_imgs + noise * th.randn_like(fake_imgs)
-                    
-                    # #clamping noisy images back to [-1, 1]
-                    # real_imgs = real_imgs.clamp(-1, 1)
-                    # fake_imgs = fake_imgs.clamp(-1, 1)
-                    
-                    # label smoothing
-                    real_labels = th.full((batch_size,), 0.9, device=device)
-                    fake_labels = th.full((batch_size,), 0.1, device=device)
+        for epoch in range(epochs):
+            generator_losses=[]
+            discriminator_losses = []
+            mean_real_dis_preds = []
+            mean_fake_dis_preds = []
+            for im, _ in tqdm(dataloader, desc=f"Epoch {epoch+1}/{epochs}"):
+                real_imgs = im.float().to(device)
+                batch_size = real_imgs.shape[0]
                 
-                    real_preds = discriminator(real_imgs)
-                    fake_preds = discriminator(fake_imgs.detach())
-                    
-                    disc_real_loss = loss_fn(real_preds.reshape(-1), real_labels.reshape(-1))
-                    disc_fake_loss = loss_fn(fake_preds.reshape(-1), fake_labels.reshape(-1))
-                    mean_real_dis_preds.append(th.nn.Sigmoid()(real_preds).mean().item())
-                    mean_fake_dis_preds.append(th.nn.Sigmoid()(fake_preds).mean().item())
-                    disc_loss = (disc_real_loss + disc_fake_loss) / 2
-                    disc_loss.backward()
-                    optimizer_disc.step()
-                    
-                    #optimize generator
-                    optimizer_gen.zero_grad()
-                    fake_preds = discriminator(fake_imgs)
-                    gen_loss = loss_fn(fake_preds.reshape(-1), real_labels.reshape(-1))
-                    gen_loss.backward()
-                    optimizer_gen.step()
-                    
-                    discriminator_losses.append(disc_loss.item())
-                    generator_losses.append(gen_loss.item())
-                # Save samples
-                if epoch % 5 == 0:
-                    generator.eval()
-                    sample(epoch, generator, device)
-                    generator.train()
+                #optimize discriminator
+                optimizer_disc.zero_grad()
+                z = th.randn(batch_size, latent_dim).to(device)
+                fake_imgs = generator(z)
                 
-                # Log losses to CSV
-                writer.writerow([
+                # #instance noise for the first 10 epochs
+                # noise = max(0.05 * (1 - epoch / (epochs - 10)), 0.01)
+                # real_imgs = real_imgs + noise * th.randn_like(real_imgs)
+                # fake_imgs = fake_imgs + noise * th.randn_like(fake_imgs)
+                
+                # #clamping noisy images back to [-1, 1]
+                # real_imgs = real_imgs.clamp(-1, 1)
+                # fake_imgs = fake_imgs.clamp(-1, 1)
+                
+                # label smoothing
+                real_labels = th.full((batch_size,), 0.9, device=device)
+                fake_labels = th.full((batch_size,), 0.1, device=device)
+            
+                real_preds = discriminator(real_imgs)
+                fake_preds = discriminator(fake_imgs.detach())
+                
+                disc_real_loss = loss_fn(real_preds.reshape(-1), real_labels.reshape(-1))
+                disc_fake_loss = loss_fn(fake_preds.reshape(-1), fake_labels.reshape(-1))
+                mean_real_dis_preds.append(th.nn.Sigmoid()(real_preds).mean().item())
+                mean_fake_dis_preds.append(th.nn.Sigmoid()(fake_preds).mean().item())
+                disc_loss = (disc_real_loss + disc_fake_loss) / 2
+                disc_loss.backward()
+                optimizer_disc.step()
+                
+                #optimize generator
+                optimizer_gen.zero_grad()
+                fake_preds = discriminator(fake_imgs)
+                gen_loss = loss_fn(fake_preds.reshape(-1), real_labels.reshape(-1))
+                gen_loss.backward()
+                optimizer_gen.step()
+                
+                discriminator_losses.append(disc_loss.item())
+                generator_losses.append(gen_loss.item())
+            # Save samples
+            if epoch % 5 == 0:
+                generator.eval()
+                sample(epoch, generator, device)
+                generator.train()
+            
+            # Log losses to CSV
+            writer.writerow([
+                epoch + 1,
+                np.mean(generator_losses),
+                np.mean(discriminator_losses)
+            ])
+            
+            print('Finished epoch:{} | Generator Loss : {:.4f} | Discriminator Loss : {:.4f}| '
+                  'Discriminator real pred : {:.4f} | Discriminator fake pred : {:.4f}'.format(
                     epoch + 1,
                     np.mean(generator_losses),
-                    np.mean(discriminator_losses)
-                ])
-                
-                # Calculate and log FID
-                if epoch % 5==0:
-                    fid_value = calculate_fid(generator, dataloader, device, latent_dim, num_samples=1000)
-                    fid_writer.writerow([epoch + 1, fid_value])
-                
-                print('Finished epoch:{} | Generator Loss : {:.4f} | Discriminator Loss : {:.4f}| '
-                      'Discriminator real pred : {:.4f} | Discriminator fake pred : {:.4f}'.format(
-                        epoch + 1,
-                        np.mean(generator_losses),
-                        np.mean(discriminator_losses),
-                        np.mean(mean_real_dis_preds),
-                        np.mean(mean_fake_dis_preds),
+                    np.mean(discriminator_losses),
+                    np.mean(mean_real_dis_preds),
+                    np.mean(mean_fake_dis_preds),
                     )
                 )
 
