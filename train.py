@@ -121,6 +121,14 @@ def train(generator, discriminator, loss_fn, optimizer_disc, optimizer_gen, data
                     np.mean(mean_fake_dis_preds),
                     )
                 )
+            
+            # Save model checkpoints
+            if epoch % 10 == 0:
+                if not os.path.exists('checkpoints'):
+                    os.mkdir('checkpoints')
+                th.save(generator.state_dict(), os.path.join('checkpoints', f'generator_epoch_{epoch+1}.pth'))
+                th.save(discriminator.state_dict(), os.path.join('checkpoints', f'discriminator_epoch_{epoch+1}.pth'))
+
 
 def main():
     generator = Generator(
