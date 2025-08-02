@@ -2,7 +2,7 @@ import os
 import subprocess
 
 ckpt_dir = "checkpoints"
-eval_script = "eval_fid.py"
+eval_script = "eval.py"
 csv_path = "fid_scores.csv"
 
 # Optional: Clear the old CSV file first (uncomment if needed)
