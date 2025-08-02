@@ -25,9 +25,8 @@ latent_dim = config["latent_dim"]
 
 
 
-def eval(generator, discriminator, dataloader, device):
+def eval(generator, dataloader, device):
     generator.eval()
-    discriminator.eval()
     
     fid_metric = FrechetInceptionDistance(feature=2048, normalize=True).to(device)
 
@@ -59,14 +58,13 @@ def main():
         output_paddings=[0, 0, 0, 0, 0]
     ).to(device)
     
-    discriminator = Discriminator(
-        im_size=32,
-        im_channels=3,  
-        conv_channels=[128, 256, 512, 1024],
-        kernels=[3, 4, 4, 4, 4],
-        strides=[1, 2, 2, 2, 2],
-        paddings=[1, 1, 1, 1, 0]
-    ).to(device)
+    # Load the model ckpt
+    ckpt_path = "checkpoints/generator_epoch_91.pth"  # <-- change this path if needed
+    if os.path.exists(ckpt_path):
+        generator.load_state_dict(th.load(ckpt_path, map_location=device))
+        print(f"Loaded generator checkpoint from {ckpt_path}")
+    else:
+        raise FileNotFoundError(f"Checkpoint not found: {ckpt_path}")
 
     # Load the dataset
     transform = transforms.Compose([
@@ -79,7 +77,7 @@ def main():
     dataloader = DataLoader(dataset, batch_size=64, shuffle=False)
 
     # Evaluate FID
-    fid_score = eval(generator, discriminator, dataloader, device)
+    fid_score = eval(generator, dataloader, device)
     print(f"FID Score: {fid_score}")
     
 if __name__ == "__main__":
