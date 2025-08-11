@@ -37,10 +37,23 @@ DC-GAN is a type of Generative Adversarial Network that uses convolutional layer
 git clone https://github.com/your-username/dc-gan.git
 cd dc-gan
 python -m venv venv
-source venv/bin/activate  # Linux/macOS
-# OR
-venv\Scripts\activate     # Windows
+```
 
+## Activate Conva Env
+
+```
+source venv/bin/activate  # Linux/
+```
+
+### OR
+
+```
+venv\Scripts\activate     # Windows
+```
+
+## Install Requirements
+
+```
 pip install -r requirements.txt
 ```
 
