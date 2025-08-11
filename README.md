@@ -39,19 +39,19 @@ cd dc-gan
 python -m venv venv
 ```
 
-## Activate Conva Env
+### Activate Conva Env
 
 ```
 source venv/bin/activate  # Linux/
 ```
 
-### OR
+### Or
 
 ```
 venv\Scripts\activate     # Windows
 ```
 
-## Install Requirements
+### Install Requirements
 
 ```
 pip install -r requirements.txt
