@@ -6,12 +6,12 @@ This repository contains a PyTorch implementation of **Deep Convolutional Genera
 
 ## Table of Contents
 
-- [Introduction](#introduction)  
-- [Features](#features)  
-- [Installation](#installation)  
-- [Usage](#usage)  
-- [Results](#results)  
-- [References](#references)  
+- [Introduction](#introduction)
+- [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Results](#results)
+- [References](#references)
 
 ---
 
@@ -23,11 +23,11 @@ DC-GAN is a type of Generative Adversarial Network that uses convolutional layer
 
 ## Features
 
-- PyTorch-based implementation  
-- Supports training on CPU and GPU  
-- Saves model checkpoints and sample generated images  
-- Configurable hyperparameters (learning rate, epochs, batch size)  
-- Visualization of training losses and generated samples  
+- PyTorch-based implementation
+- Supports training on CPU and GPU
+- Saves model checkpoints and sample generated images
+- Configurable hyperparameters (learning rate, epochs, batch size)
+- Visualization of training losses and generated samples
 
 ---
 
@@ -60,6 +60,7 @@ pip install -r requirements.txt
 ## Usage
 
 ### Train The Model
+
 ```
 python train.py
 ```
@@ -67,30 +68,33 @@ python train.py
 ### Evaluate FID Score
 
 **Evaluate FID Score of a Single ckpt**
+
 ```
 python eval.py --ckpt {ckpt_path} --csv {fid_scores_csv_path}
 ```
 
 **Evaluate FID Scores across all ckpts**
+
 ```
 python eval_all_ckpts.py
 ```
 
 ## Results
+
 Example generated images after training:
 
+![results](/results/final_results.png)
 
 Training loss curves are saved during training for visualization.
 
+![loss_curves](/results/loss_curves.png)
 
 ## References
 
 - Goodfellow, I., Pouget-Abadie, J., Mirza, M., Xu, B., Warde-Farley, D., Ozair, S., Courville, A., & Bengio, Y. (2014).  
-  *Generative Adversarial Nets*.  
+  _Generative Adversarial Nets_.  
   [https://arxiv.org/abs/1406.2661](https://arxiv.org/abs/1406.2661)
 
 - Radford, A., Metz, L., & Chintala, S. (2015).  
-  *Unsupervised Representation Learning with Deep Convolutional Generative Adversarial Networks*.  
+  _Unsupervised Representation Learning with Deep Convolutional Generative Adversarial Networks_.  
   [https://arxiv.org/abs/1511.06434](https://arxiv.org/abs/1511.06434)
-
-
